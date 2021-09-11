@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
 #[derive(Debug, Default, Serialize, Clone)]
@@ -26,17 +28,17 @@ pub struct VideoGrant {
 }
 
 #[derive(Debug, Clone)]
-pub struct Token {
-	pub api_key: String,
-	pub api_secret: String,
-	pub identity: String,
+pub struct Token<'a> {
+	pub api_key: Cow<'a, str>,
+	pub api_secret: Cow<'a, str>,
+	pub identity: Cow<'a, str>,
 	pub ttl: u64,
 	pub video: Option<VideoGrant>,
-	pub metadata: Option<String>,
-	pub sha256: Option<String>,
+	pub metadata: Option<Cow<'a, str>>,
+	pub sha256: Option<Cow<'a, str>>,
 }
 
-impl Serialize for Token {
+impl<'a> Serialize for Token<'a> {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
 		S: Serializer,

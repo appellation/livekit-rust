@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 
+use chrono::Duration;
 use livekit::{api::Client, options::CreateRoomOptions, token::Token};
 
 const BASE_URL: &'static str = "https://demo.livekit.io";
@@ -13,7 +14,7 @@ async fn main() {
 		api_key: API_KEY.into(),
 		api_secret: Cow::Borrowed(API_SECRET),
 		identity: IDENTITY.into(),
-		ttl: 3600,
+		ttl: Duration::hours(1),
 		video: None,
 		metadata: None,
 		sha256: None,

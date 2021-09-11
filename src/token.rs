@@ -1,5 +1,6 @@
 use std::{borrow::Cow, convert::TryFrom};
 
+use chrono::{Duration, Utc};
 use hmac::{Hmac, NewMac};
 use jwt::SignWithKey;
 use serde::{ser::SerializeMap, Serialize, Serializer};
@@ -35,7 +36,7 @@ pub struct Token<'a> {
 	pub api_key: Cow<'a, str>,
 	pub api_secret: Cow<'a, [u8]>,
 	pub identity: Cow<'a, str>,
-	pub ttl: u64,
+	pub ttl: Duration,
 	pub video: Option<VideoGrant>,
 	pub metadata: Option<Cow<'a, str>>,
 	pub sha256: Option<Cow<'a, str>>,
@@ -61,12 +62,12 @@ impl<'a> Serialize for Token<'a> {
 	where
 		S: Serializer,
 	{
+		let exp = Utc::now() + self.ttl;
 		let mut map = serializer.serialize_map(Some(7))?;
 
-		map.serialize_entry("exp", &self.ttl)?;
+		map.serialize_entry("exp", &exp.timestamp())?;
 		map.serialize_entry("iss", &self.api_key)?;
 		map.serialize_entry("sub", &self.identity)?;
-		map.serialize_entry("nbf", &0)?;
 		map.serialize_entry("video", &self.video)?;
 		map.serialize_entry("metadata", &self.metadata)?;
 		map.serialize_entry("sha256", &self.sha256)?;

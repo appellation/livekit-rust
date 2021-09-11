@@ -9,24 +9,25 @@ use crate::{
 		CreateRoomOptions, MuteTrackOptions, ParticipantOptions, RoomName,
 		UpdateParticipantOptions, UpdateSubscriptionsOptions,
 	},
+	token::Token,
 };
 
 #[derive(Debug, Clone)]
-pub struct Client<'token> {
+pub struct Client {
 	/// The base URL used to make requests.
 	pub base: Url,
 	/// The reqwest client used to make requests.
 	pub client: reqwest::Client,
 	/// The authorization token used to make requests.
-	pub token: &'token str,
+	token: String,
 }
 
-impl<'token> Client<'token> {
+impl Client {
 	/// Makes a new client. Base URL is appended with the appropriate path segments, so most uses
 	/// should provide only the protocol and hostname. Panics if base URL is cannot-be-a-base.
 	pub fn new(
 		base: impl IntoUrl,
-		token: &'token str,
+		token: Token<'_>,
 		client: reqwest::Client,
 	) -> Result<Self, reqwest::Error> {
 		let mut base = base.into_url()?;
@@ -34,6 +35,8 @@ impl<'token> Client<'token> {
 			.unwrap()
 			.push("twirp")
 			.push("livekit.RoomService");
+
+		let token = token.to_jwt().unwrap();
 
 		Ok(Self {
 			base,
@@ -117,7 +120,9 @@ impl<'token> Client<'token> {
 	fn request_builder(&self, method: &str) -> RequestBuilder {
 		let url = self.make_url(method);
 
-		self.client.post(url).bearer_auth(&self.token)
+		self.client
+			.post(url)
+			.bearer_auth(&self.token)
 	}
 
 	async fn send_with_body<B, R>(&self, method: &str, body: &B) -> Result<R, Error>

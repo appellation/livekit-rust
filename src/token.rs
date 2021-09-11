@@ -1,6 +1,9 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, convert::TryFrom};
 
+use hmac::{Hmac, NewMac};
+use jwt::SignWithKey;
 use serde::{ser::SerializeMap, Serialize, Serializer};
+use sha2::Sha256;
 
 #[derive(Debug, Default, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -30,12 +33,27 @@ pub struct VideoGrant {
 #[derive(Debug, Clone)]
 pub struct Token<'a> {
 	pub api_key: Cow<'a, str>,
-	pub api_secret: Cow<'a, str>,
+	pub api_secret: Cow<'a, [u8]>,
 	pub identity: Cow<'a, str>,
 	pub ttl: u64,
 	pub video: Option<VideoGrant>,
 	pub metadata: Option<Cow<'a, str>>,
 	pub sha256: Option<Cow<'a, str>>,
+}
+
+impl<'a> TryFrom<&Token<'a>> for String {
+	type Error = jwt::Error;
+
+	fn try_from(value: &Token<'a>) -> Result<Self, Self::Error> {
+		value.to_jwt()
+	}
+}
+
+impl<'a> Token<'a> {
+	pub fn to_jwt(&self) -> Result<String, jwt::Error> {
+		let key = Hmac::<Sha256>::new_from_slice(&self.api_secret)?;
+		self.sign_with_key(&key)
+	}
 }
 
 impl<'a> Serialize for Token<'a> {

@@ -1,20 +1,17 @@
-use hmac::{Hmac, NewMac};
-use jwt::SignWithKey;
+use std::borrow::Cow;
+
 use livekit::{api::Client, options::CreateRoomOptions, token::Token};
-use sha2::Sha256;
 
 const BASE_URL: &'static str = "https://demo.livekit.io";
 const API_KEY: &'static str = "abc";
-const API_SECRET: &'static str = "def";
+const API_SECRET: &'static [u8; 12] = b"super secret";
 const IDENTITY: &'static str = "hello world";
-
-const SECRET_KEY: &'static [u8; 12] = b"super secret";
 
 #[tokio::main]
 async fn main() {
 	let token = Token {
 		api_key: API_KEY.into(),
-		api_secret: API_SECRET.into(),
+		api_secret: Cow::Borrowed(API_SECRET),
 		identity: IDENTITY.into(),
 		ttl: 3600,
 		video: None,
@@ -22,10 +19,7 @@ async fn main() {
 		sha256: None,
 	};
 
-	let key = Hmac::<Sha256>::new_from_slice(SECRET_KEY).expect("Invalid signing key");
-	let token = token.sign_with_key(&key).expect("signed token");
-
-	let client = Client::new(BASE_URL, &token, Default::default()).expect("Invalid client");
+	let client = Client::new(BASE_URL, token, Default::default()).expect("Invalid client");
 
 	client
 		.create_room(&CreateRoomOptions {

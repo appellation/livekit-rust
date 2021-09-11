@@ -8,7 +8,7 @@ use sha2::Sha256;
 
 #[derive(Debug, Default, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct VideoGrant {
+pub struct VideoGrant<'a> {
 	#[serde(skip_serializing_if = "Option::is_none")]
 	room_create: Option<bool>,
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -20,7 +20,7 @@ pub struct VideoGrant {
 	#[serde(skip_serializing_if = "Option::is_none")]
 	room_admin: Option<bool>,
 	#[serde(skip_serializing_if = "Option::is_none")]
-	room: Option<String>,
+	room: Option<Cow<'a, str>>,
 	#[serde(skip_serializing_if = "Option::is_none")]
 	can_publish: Option<bool>,
 	#[serde(skip_serializing_if = "Option::is_none")]
@@ -37,7 +37,7 @@ pub struct Token<'a> {
 	pub api_secret: Cow<'a, [u8]>,
 	pub identity: Cow<'a, str>,
 	pub ttl: Duration,
-	pub video: Option<VideoGrant>,
+	pub video: Option<VideoGrant<'a>>,
 	pub metadata: Option<Cow<'a, str>>,
 	pub sha256: Option<Cow<'a, str>>,
 }
@@ -63,7 +63,7 @@ impl<'a> Serialize for Token<'a> {
 		S: Serializer,
 	{
 		let exp = Utc::now() + self.ttl;
-		let mut map = serializer.serialize_map(Some(7))?;
+		let mut map = serializer.serialize_map(Some(6))?;
 
 		map.serialize_entry("exp", &exp.timestamp())?;
 		map.serialize_entry("iss", &self.api_key)?;
